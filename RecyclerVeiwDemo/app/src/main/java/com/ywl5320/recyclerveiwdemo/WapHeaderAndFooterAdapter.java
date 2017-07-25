@@ -1,9 +1,13 @@
 package com.ywl5320.recyclerveiwdemo;
 
+import android.content.Context;
 import android.support.v7.widget.GridLayoutManager;
+import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.View;
 import android.view.ViewGroup;
+
+import java.lang.reflect.Field;
 
 /**
  * Created by ywl on 2017-7-23.
@@ -17,7 +21,7 @@ public class WapHeaderAndFooterAdapter extends RecyclerView.Adapter<RecyclerView
     private View headerView;
     private View footerView;
     private RecyclerView.Adapter badapter;//目标adapter
-    private OnLoadMoreListener onloadMoreListener;
+    private int mOrientation = -1;
 
 
     public WapHeaderAndFooterAdapter(RecyclerView.Adapter badapter) {
@@ -36,7 +40,7 @@ public class WapHeaderAndFooterAdapter extends RecyclerView.Adapter<RecyclerView
 
     //实现加载更多接口
     public void setOnloadMoreListener(final OnLoadMoreListener onloadMoreListener, RecyclerView recyclerView) {
-        this.onloadMoreListener = onloadMoreListener;
+
         if(recyclerView != null && onloadMoreListener != null)
         {
             recyclerView.setOnScrollListener(new RecyclerView.OnScrollListener() {
@@ -222,6 +226,7 @@ public class WapHeaderAndFooterAdapter extends RecyclerView.Adapter<RecyclerView
     @Override
     public void onAttachedToRecyclerView(RecyclerView recyclerView) {
         final RecyclerView.LayoutManager layoutManager = recyclerView.getLayoutManager();
+        mOrientation = getOrientation(layoutManager);
         if(layoutManager instanceof GridLayoutManager)
         {
             /**
@@ -263,6 +268,7 @@ public class WapHeaderAndFooterAdapter extends RecyclerView.Adapter<RecyclerView
                     return 1;
                 }
             });
+
         }
     }
 
@@ -273,8 +279,15 @@ public class WapHeaderAndFooterAdapter extends RecyclerView.Adapter<RecyclerView
      */
     protected boolean isSlideToBottom(RecyclerView recyclerView) {
         if (recyclerView == null) return false;
-        if (recyclerView.computeVerticalScrollExtent() + recyclerView.computeVerticalScrollOffset() >= recyclerView.computeVerticalScrollRange())
-            return true;
+        if(mOrientation == LinearLayoutManager.VERTICAL) {
+            if (recyclerView.computeVerticalScrollExtent() + recyclerView.computeVerticalScrollOffset() >= recyclerView.computeVerticalScrollRange())
+                return true;
+        }
+        else
+        {
+            if (recyclerView.computeHorizontalScrollExtent() + recyclerView.computeHorizontalScrollOffset() >= recyclerView.computeHorizontalScrollRange())
+                return true;
+        }
         return false;
     }
 
@@ -284,6 +297,25 @@ public class WapHeaderAndFooterAdapter extends RecyclerView.Adapter<RecyclerView
     public interface OnLoadMoreListener
     {
         void onLoadMore();
+    }
+
+    private int getOrientation(RecyclerView.LayoutManager layoutManager)
+    {
+        int mOrientation = 0;
+        Class<?> clazz = null;
+        try {
+            clazz = Class.forName("android.support.v7.widget.LinearLayoutManager");
+            Field field = clazz.getDeclaredField("mOrientation");
+            field.setAccessible(true);
+            mOrientation = field.getInt(layoutManager);
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (NoSuchFieldException e) {
+            e.printStackTrace();
+        }
+        return mOrientation;
     }
 
 }
