@@ -1,6 +1,5 @@
-package com.ywl5320.recyclerveiwdemo;
+package com.undunion.appsdk.adapter;
 
-import android.content.Context;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -22,6 +21,7 @@ public class WapHeaderAndFooterAdapter extends RecyclerView.Adapter<RecyclerView
     private View footerView;
     private RecyclerView.Adapter badapter;//目标adapter
     private int mOrientation = -1;
+    private OnLoadMoreListener onloadMoreListener;
 
 
     public WapHeaderAndFooterAdapter(RecyclerView.Adapter badapter) {
@@ -41,6 +41,7 @@ public class WapHeaderAndFooterAdapter extends RecyclerView.Adapter<RecyclerView
     //实现加载更多接口
     public void setOnloadMoreListener(final OnLoadMoreListener onloadMoreListener, RecyclerView recyclerView) {
 
+        this.onloadMoreListener = onloadMoreListener;
         if(recyclerView != null && onloadMoreListener != null)
         {
             recyclerView.setOnScrollListener(new RecyclerView.OnScrollListener() {
@@ -84,12 +85,18 @@ public class WapHeaderAndFooterAdapter extends RecyclerView.Adapter<RecyclerView
             }
             else//其他时候就展示原来adapter的
             {
+                if(badapter.getItemCount() > 1) {
+                    return badapter.getItemViewType(position);
+                }
                 return normaltype;
             }
         }
         else if(headerView != null) {//只有头部
             if (position == 0)
                 return headtype;
+            if(badapter.getItemCount() > 1) {
+                return badapter.getItemViewType(position);
+            }
             return normaltype;
         }
         else if(footerView != null)//只有尾部
@@ -100,10 +107,16 @@ public class WapHeaderAndFooterAdapter extends RecyclerView.Adapter<RecyclerView
             }
             else
             {
+                if(badapter.getItemCount() > 1) {
+                    return badapter.getItemViewType(position);
+                }
                 return normaltype;
             }
         }
         else {
+            if(badapter.getItemCount() > 1) {
+                return badapter.getItemViewType(position);
+            }
             return normaltype;
         }
     }
@@ -132,7 +145,20 @@ public class WapHeaderAndFooterAdapter extends RecyclerView.Adapter<RecyclerView
      * @param position
      */
     @Override
-    public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
+    public void onBindViewHolder(RecyclerView.ViewHolder holder, final int position) {
+
+        if(footerView != null)
+        {
+            footerView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if(onloadMoreListener != null)
+                    {
+                        onloadMoreListener.onClickLoadMore();
+                    }
+                }
+            });
+        }
 
         if(headerView != null && footerView != null)//有头部和尾部
         {
@@ -146,6 +172,15 @@ public class WapHeaderAndFooterAdapter extends RecyclerView.Adapter<RecyclerView
             }
             else
             {
+                holder.itemView.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        if(onloadMoreListener != null)
+                        {
+                            onloadMoreListener.onItemClick(v, position - 1);
+                        }
+                    }
+                });
                 badapter.onBindViewHolder(holder, position - 1);//其他就调用adapter的绑定方法
             }
         }
@@ -157,6 +192,15 @@ public class WapHeaderAndFooterAdapter extends RecyclerView.Adapter<RecyclerView
             }
             else
             {
+                holder.itemView.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        if(onloadMoreListener != null)
+                        {
+                            onloadMoreListener.onItemClick(v, position - 1);
+                        }
+                    }
+                });
                 badapter.onBindViewHolder(holder, position - 1);
             }
         }
@@ -168,11 +212,29 @@ public class WapHeaderAndFooterAdapter extends RecyclerView.Adapter<RecyclerView
             }
             else
             {
+                holder.itemView.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        if(onloadMoreListener != null)
+                        {
+                            onloadMoreListener.onItemClick(v, position);
+                        }
+                    }
+                });
                 badapter.onBindViewHolder(holder, position);
             }
         }
         else
         {
+            holder.itemView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if(onloadMoreListener != null)
+                    {
+                        onloadMoreListener.onItemClick(v, position);
+                    }
+                }
+            });
             badapter.onBindViewHolder(holder, position);
         }
     }
@@ -297,6 +359,10 @@ public class WapHeaderAndFooterAdapter extends RecyclerView.Adapter<RecyclerView
     public interface OnLoadMoreListener
     {
         void onLoadMore();
+
+        void onClickLoadMore();
+
+        void onItemClick(View view, int position);
     }
 
     private int getOrientation(RecyclerView.LayoutManager layoutManager)
