@@ -6,6 +6,8 @@ import android.support.v7.widget.RecyclerView;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.undunion.appsdk.util.MyLog;
+
 import java.lang.reflect.Field;
 
 /**
@@ -23,7 +25,6 @@ public class WapHeaderAndFooterAdapter extends RecyclerView.Adapter<RecyclerView
     private int mOrientation = -1;
     private OnLoadMoreListener onloadMoreListener;
 
-
     public WapHeaderAndFooterAdapter(RecyclerView.Adapter badapter) {
         this.badapter = badapter;
     }
@@ -33,10 +34,17 @@ public class WapHeaderAndFooterAdapter extends RecyclerView.Adapter<RecyclerView
         headerView = header;
     }
 
+    public void removeHeader()
+    {
+        headerView = null;
+    }
+
     public void addFooter(View footer)
     {
         footerView = footer;
     }
+
+    private boolean loadMore = false;
 
     //实现加载更多接口
     public void setOnloadMoreListener(final OnLoadMoreListener onloadMoreListener, RecyclerView recyclerView) {
@@ -44,21 +52,41 @@ public class WapHeaderAndFooterAdapter extends RecyclerView.Adapter<RecyclerView
         this.onloadMoreListener = onloadMoreListener;
         if(recyclerView != null && onloadMoreListener != null)
         {
-            recyclerView.setOnScrollListener(new RecyclerView.OnScrollListener() {
+            recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
                 @Override
                 public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
                     super.onScrollStateChanged(recyclerView, newState);
+                    if(newState == RecyclerView.SCROLL_STATE_IDLE){
+                        final RecyclerView.LayoutManager layoutManager = recyclerView.getLayoutManager();
+                        int lastVisiblePosition = 0;
+                        if (layoutManager instanceof LinearLayoutManager)
+                        {
+                            lastVisiblePosition = ((LinearLayoutManager)layoutManager).findLastVisibleItemPosition();
+                        }
+                        else if(layoutManager instanceof GridLayoutManager)
+                        {
+                            lastVisiblePosition = ((GridLayoutManager)layoutManager).findLastVisibleItemPosition();
+                        }
+                        if(lastVisiblePosition >= layoutManager.getItemCount() - 1 && loadMore){
+                            loadMore = false;
+                            if(onloadMoreListener != null)
+                            {
+                                onloadMoreListener.onLoadMore();
+                            }
+                        }
+                    }
                 }
 
                 @Override
                 public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
                     super.onScrolled(recyclerView, dx, dy);
-                    if(isSlideToBottom(recyclerView))
+                    if(dy > 0)
                     {
-                        if(onloadMoreListener != null)
-                        {
-                            onloadMoreListener.onLoadMore();
-                        }
+                        loadMore = true;
+                    }
+                    else
+                    {
+                        loadMore = false;
                     }
                 }
             });
